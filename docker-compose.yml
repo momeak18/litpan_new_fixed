@@ -4,6 +4,8 @@ services:
       # This repository is the build context after cloning to a new device.
       context: .
     image: litepan:ed2k-fix
+    # The image is built from this repository; do not look for litepan on Docker Hub.
+    pull_policy: build
     container_name: litepan-beta
     restart: unless-stopped
     ports:
