@@ -15,6 +15,7 @@ import CleanupToolCard from "@/components/admin/CleanupToolCard.vue";
 import CoverExtractToolCard from "@/components/admin/CoverExtractToolCard.vue";
 import CloudToolCard from "@/components/admin/CloudToolCard.vue";
 import LocalUploadToolCard from "@/components/admin/LocalUploadToolCard.vue";
+import JavSPToolCard from "@/components/admin/JavSPToolCard.vue";
 import ProxyToolsPanel from "@/components/admin/ProxyToolsPanel.vue";
 import QuarkTVToolCard from "@/components/admin/QuarkTVToolCard.vue";
 
@@ -34,7 +35,7 @@ function matches(title: string) {
 
 const hasMatch = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
-  return !q || cardTitles.some((t) => t.toLowerCase().includes(q));
+  return !q || cardTitles.some((t) => t.toLowerCase().includes(q)) || "javsp javsp-web metadata scraper".includes(q);
 });
 
 function closeSearch() {
@@ -174,6 +175,8 @@ async function clearCache() {
       <CleanupToolCard :search-query="searchQuery" />
 
       <CoverExtractToolCard :search-query="searchQuery" />
+
+      <JavSPToolCard :search-query="searchQuery" />
     </div>
     <div v-if="searchOpen && !hasMatch" class="tool-search__empty">没有找到相关工具</div>
   </div>

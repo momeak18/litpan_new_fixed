@@ -33,7 +33,7 @@ FROM debian:bookworm-slim AS runtime
 
 RUN sed -i 's/Components: main/Components: main contrib non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources \
     && apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates tzdata fuse3 p7zip-full unrar \
+    && apt-get install -y --no-install-recommends ca-certificates tzdata fuse3 p7zip-full unrar docker.io \
     && sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf 2>/dev/null || true \
     && grep -q '^user_allow_other' /etc/fuse.conf || echo user_allow_other >> /etc/fuse.conf \
     && rm -rf /var/lib/apt/lists/*

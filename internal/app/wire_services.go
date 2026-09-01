@@ -18,6 +18,7 @@ import (
 	"litepan/internal/fnosproxy"
 	"litepan/internal/fusemount"
 	"litepan/internal/fusereadcache"
+	"litepan/internal/javsp"
 	"litepan/internal/localextract"
 	"litepan/internal/logx"
 	"litepan/internal/mediaorganize"
@@ -35,6 +36,7 @@ type servicesBundle struct {
 	uploads          *upload.Manager
 	offlineDownloads *offlinedownload.Service
 	localExtracts    *localextract.Service
+	javsp            *javsp.Service
 	playback         *playback.Service
 	account          *account.Service
 	accountProfile   *accountprofile.Service
@@ -159,6 +161,7 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 		DataDir: cfg.DataDir, Playback: playbackSvc, Files: fileSvc, Uploads: uploadSvc,
 		Log: logs.For(logx.ModuleFileOp),
 	})
+	javspSvc := javsp.New(javsp.Options{DataDir: cfg.DataDir, Log: logs.For(logx.ModuleSystem)})
 	lifecycle.uploads = uploadSvc
 	offlineDownloadSvc.SetUploads(uploadSvc)
 	fuseSvc.SetUploads(uploadSvc)
@@ -200,6 +203,7 @@ func wireServices(cfg config.Config, logs *logx.Manager, st *storeBundle, core *
 		uploads:          uploadSvc,
 		offlineDownloads: offlineDownloadSvc,
 		localExtracts:    localExtractSvc,
+		javsp:            javspSvc,
 		playback:         playbackSvc,
 		account:          accountSvc,
 		accountProfile:   accountProfileSvc,

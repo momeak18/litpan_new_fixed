@@ -22,6 +22,7 @@ import (
 	"litepan/internal/file"
 	"litepan/internal/fnosproxy"
 	"litepan/internal/fusemount"
+	"litepan/internal/javsp"
 	"litepan/internal/localextract"
 	"litepan/internal/logx"
 	"litepan/internal/mediaorganize"
@@ -53,6 +54,7 @@ type App struct {
 	uploads          *upload.Manager
 	offlineDownloads *offlinedownload.Service
 	localExtracts    *localextract.Service
+	javsp            *javsp.Service
 	playback         *playback.Service
 	strm             *strm.Service
 	mediaOrganize    *mediaorganize.Service
@@ -137,6 +139,7 @@ func New(ctx context.Context, opts Options) (*App, error) {
 		uploads:          svc.uploads,
 		offlineDownloads: svc.offlineDownloads,
 		localExtracts:    svc.localExtracts,
+		javsp:            svc.javsp,
 		playback:         svc.playback,
 		strm:             svc.strm,
 		mediaOrganize:    svc.mediaOrganize,
@@ -179,6 +182,9 @@ func (a *App) Run(ctx context.Context) error {
 	}
 	if a.localExtracts != nil {
 		a.localExtracts.Start(ctx)
+	}
+	if a.javsp != nil {
+		a.javsp.Start(ctx)
 	}
 	if a.embyProxy != nil {
 		a.embyProxy.Start(ctx)
@@ -253,6 +259,13 @@ func (a *App) Shutdown(ctx context.Context) error {
 			a.log.Warn("本地解压队列停止异常", "err", err)
 		}
 		cancelExtract()
+	}
+	if a.javsp != nil {
+		javspCtx, cancelJavSP := context.WithTimeout(ctx, shutdownOfflineBudget)
+		if err := a.javsp.Stop(javspCtx); err != nil {
+			a.log.Warn("JavSP 任务停止异常", "err", err)
+		}
+		cancelJavSP()
 	}
 	if a.fuse != nil {
 		fuseCtx, cancelFuse := context.WithTimeout(ctx, shutdownFuseBudget)

@@ -37,6 +37,7 @@ import (
 	"litepan/internal/file"
 	"litepan/internal/fnosproxy"
 	"litepan/internal/fusemount"
+	"litepan/internal/javsp"
 	"litepan/internal/localextract"
 	"litepan/internal/logx"
 	"litepan/internal/mediaorganize"
@@ -70,6 +71,7 @@ type Deps struct {
 	Uploads           *upload.Manager
 	OfflineDownloads  *offlinedownload.Service
 	LocalExtracts     *localextract.Service
+	JavSP             *javsp.Service
 	Playback          *playback.Service
 	Strm              *strm.Service
 	CacheRetention    *cacheretention.Service
@@ -112,6 +114,7 @@ type Handler struct {
 	uploads           *upload.Manager
 	offlineDownloads  *offlinedownload.Service
 	localExtracts     *localextract.Service
+	javsp             *javsp.Service
 	playback          *playback.Service
 	strm              *strm.Service
 	cacheRetention    *cacheretention.Service
@@ -162,6 +165,7 @@ func NewRouter(d Deps) http.Handler {
 		uploads:           d.Uploads,
 		offlineDownloads:  d.OfflineDownloads,
 		localExtracts:     d.LocalExtracts,
+		javsp:             d.JavSP,
 		playback:          d.Playback,
 		strm:              d.Strm,
 		cacheRetention:    d.CacheRetention,
@@ -373,6 +377,13 @@ func NewRouter(d Deps) http.Handler {
 					r.Post("/runtime/download", h.downloadCoverExtractRuntime)
 					r.Get("/style", h.getCoverStyle)
 					r.Put("/style", h.putCoverStyle)
+				})
+				r.Route("/tools/javsp", func(r chi.Router) {
+					r.Get("/config", h.getJavSPConfig)
+					r.Put("/config", h.putJavSPConfig)
+					r.Get("/tasks", h.listJavSPTasks)
+					r.Post("/tasks", h.createJavSPTask)
+					r.Post("/tasks/{id}/cancel", h.cancelJavSPTask)
 				})
 				r.Route("/media-organize", func(r chi.Router) {
 					r.Get("/tasks", h.listMediaOrganizeTasks)

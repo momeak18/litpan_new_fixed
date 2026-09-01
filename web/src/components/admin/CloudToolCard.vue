@@ -71,6 +71,7 @@ const stateClass = computed(() => (props.enabled ? "is-enabled" : "is-disabled")
         <slot name="actions" />
       </div>
     </div>
+    <slot name="details" />
   </article>
 </template>
 

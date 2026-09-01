@@ -141,6 +141,7 @@ func wireHTTPServer(cfg config.Config, logs *logx.Manager, st *storeBundle, core
 		Uploads:           svc.uploads,
 		OfflineDownloads:  svc.offlineDownloads,
 		LocalExtracts:     svc.localExtracts,
+		JavSP:             svc.javsp,
 		Playback:          svc.playback,
 		Strm:              svc.strm,
 		CacheRetention:    svc.cacheRetention,
