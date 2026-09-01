@@ -1,7 +1,8 @@
 services:
   litepan:
     build:
-      context: ./litepan-source
+      # This repository is the build context after cloning to a new device.
+      context: .
     image: litepan:ed2k-fix
     container_name: litepan-beta
     restart: unless-stopped
