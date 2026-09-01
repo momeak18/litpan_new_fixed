@@ -1,0 +1,31 @@
+services:
+  litepan:
+    build:
+      context: ./litepan-source
+    image: litepan:ed2k-fix
+    container_name: litepan-beta
+    restart: unless-stopped
+    ports:
+      - "5211:5211"
+      - "42069:42069/tcp"
+      - "42069:42069/udp"
+    environment:
+      - TZ=Asia/Shanghai
+      # 可选镜像站
+      # - TMDB_API_BASE_URL=https://api.tmdb.org/3
+    volumes:
+      - ./data:/app/data
+      - ./strm:/app/strm
+      - ./mounts:/app/mounts:shared
+
+      # 可选：将 FUSE 读缓存单独映射到更快的磁盘
+      # - ./fuse_read_cache:/app/data/fuse_read_cache
+    devices:
+      - /dev/fuse:/dev/fuse
+    pid: "host"
+    privileged: true
+
+    # 若本机访问 TMDB 困难，可取消注释并填写可用 IP
+    # extra_hosts:
+    #   - "api.themoviedb.org:这里填写对应的ip"
+    #   - "image.tmdb.org:这里填写对应的ip"
