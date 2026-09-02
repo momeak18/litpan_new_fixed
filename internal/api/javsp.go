@@ -11,14 +11,14 @@ import (
 
 func (h *Handler) getJavSPConfig(w http.ResponseWriter, _ *http.Request) {
 	if h.javsp == nil {
-		writeErr(w, domain.Errorf(domain.CodeNotImplement, "JavSP 鏈嶅姟鏈氨缁?))
+		writeErr(w, domain.Errorf(domain.CodeNotImplement, "JavSP service is not available"))
 		return
 	}
 	writeOK(w, h.javsp.Config())
 }
 func (h *Handler) putJavSPConfig(w http.ResponseWriter, r *http.Request) {
 	if h.javsp == nil {
-		writeErr(w, domain.Errorf(domain.CodeNotImplement, "JavSP 鏈嶅姟鏈氨缁?))
+		writeErr(w, domain.Errorf(domain.CodeNotImplement, "JavSP service is not available"))
 		return
 	}
 	var cfg javsp.Config
@@ -42,7 +42,7 @@ func (h *Handler) listJavSPTasks(w http.ResponseWriter, _ *http.Request) {
 }
 func (h *Handler) createJavSPTask(w http.ResponseWriter, r *http.Request) {
 	if h.javsp == nil {
-		writeErr(w, domain.Errorf(domain.CodeNotImplement, "JavSP 鏈嶅姟鏈氨缁?))
+		writeErr(w, domain.Errorf(domain.CodeNotImplement, "JavSP service is not available"))
 		return
 	}
 	var in struct {
@@ -61,7 +61,7 @@ func (h *Handler) createJavSPTask(w http.ResponseWriter, r *http.Request) {
 }
 func (h *Handler) cancelJavSPTask(w http.ResponseWriter, r *http.Request) {
 	if h.javsp == nil {
-		writeErr(w, domain.Errorf(domain.CodeNotImplement, "JavSP 鏈嶅姟鏈氨缁?))
+		writeErr(w, domain.Errorf(domain.CodeNotImplement, "JavSP service is not available"))
 		return
 	}
 	if err := h.javsp.Cancel(strings.TrimSpace(chi.URLParam(r, "id"))); err != nil {

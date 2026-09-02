@@ -100,7 +100,10 @@ func (s *Service) Start(parent context.Context) {
 	s.ctx, s.cancel = context.WithCancel(parent)
 	for _, task := range s.tasks {
 		if task.Status == StatusRunning {
+			task.Status, task.Message = StatusQueued, "Waiting to resume after service restart"
+			/*
 			task.Status, task.Message = StatusQueued, "鏈嶅姟閲嶅惎鍚庣瓑寰呴噸鏂版墽琛?
+			*/
 		}
 	}
 	s.persistLocked()
@@ -138,10 +141,16 @@ func (s *Service) Config() Config {
 func (s *Service) SetConfig(cfg Config) (Config, error) {
 	cfg = normalizeConfig(cfg)
 	if cfg.Enabled && strings.TrimSpace(cfg.HostMediaDir) == "" {
+		return Config{}, domain.Errorf(domain.CodeValidation, "The media directory must be an absolute host path")
+		/*
 		return Config{}, domain.Errorf(domain.CodeValidation, "璇峰～鍐?Docker 涓绘満涓婄殑濯掍綋鐩綍")
+		*/
 	}
 	if !isAbsoluteHostPath(cfg.HostMediaDir) && cfg.HostMediaDir != "" {
+		return Config{}, domain.Errorf(domain.CodeValidation, "The host media directory must be an absolute path")
+		/*
 		return Config{}, domain.Errorf(domain.CodeValidation, "濯掍綋鐩綍蹇呴』鏄?Docker 涓绘満鐨勭粷瀵硅矾寰?)
+		*/
 	}
 	s.mu.Lock()
 	s.config = cfg
@@ -158,10 +167,17 @@ func (s *Service) Create(relativePath string) (*Task, error) {
 	s.mu.Lock()
 	if !s.config.Enabled {
 		s.mu.Unlock()
+		return nil, domain.Errorf(domain.CodeValidation, "Enable JavSP scraping and save the media directory first")
+		/*
+		s.mu.Unlock()
 		return nil, domain.Errorf(domain.CodeValidation, "璇峰厛鍚敤 JavSP 鎸夐渶鍒墛骞朵繚瀛樺獟浣撶洰褰?)
+		*/
 	}
 	now := time.Now().Unix()
+	t := &Task{ID: newID(), RelativePath: relativePath, Status: StatusQueued, Message: "Queued", CreatedAt: now, UpdatedAt: now}
+	/*
 	t := &Task{ID: newID(), RelativePath: relativePath, Status: StatusQueued, Message: "绛夊緟鎵ц", CreatedAt: now, UpdatedAt: now}
+	*/
 	s.tasks[t.ID] = t
 	s.persistLocked()
 	out := cloneTask(t)
@@ -186,7 +202,10 @@ func (s *Service) Cancel(id string) error {
 	defer s.mu.Unlock()
 	t, ok := s.tasks[id]
 	if !ok {
+		return domain.Errorf(domain.CodeNotFound, "JavSP task does not exist")
+		/*
 		return domain.Errorf(domain.CodeNotFound, "JavSP 浠诲姟涓嶅瓨鍦?)
+		*/
 	}
 	if t.Status != StatusQueued && t.Status != StatusRunning {
 		return nil
@@ -194,7 +213,10 @@ func (s *Service) Cancel(id string) error {
 	if cancel := s.cancels[id]; cancel != nil {
 		cancel()
 	}
+	t.Status, t.Message, t.UpdatedAt = StatusCanceled, "Cancellation requested", time.Now().Unix()
+	/*
 	t.Status, t.Message, t.UpdatedAt = StatusCanceled, "宸茶姹傚仠姝?, time.Now().Unix()
+	*/
 	s.persistLocked()
 	return nil
 }
@@ -227,7 +249,10 @@ func (s *Service) runNext() bool {
 	}
 	ctx, cancel := context.WithCancel(s.ctx)
 	s.cancels[next.ID] = cancel
+	s.tasks[next.ID].Status, s.tasks[next.ID].Message, s.tasks[next.ID].UpdatedAt = StatusRunning, "Starting JavSP container", time.Now().Unix()
+	/*
 	s.tasks[next.ID].Status, s.tasks[next.ID].Message, s.tasks[next.ID].UpdatedAt = StatusRunning, "姝ｅ湪鍚姩 JavSP 瀹瑰櫒", time.Now().Unix()
+	*/
 	s.persistLocked()
 	s.mu.Unlock()
 	err := s.run(ctx, next)
@@ -239,11 +264,17 @@ func (s *Service) runNext() bool {
 	if t != nil && t.Status != StatusCanceled {
 		t.UpdatedAt = time.Now().Unix()
 		if canceled {
+			t.Status, t.Message = StatusCanceled, "Canceled"
+			/*
 			t.Status, t.Message = StatusCanceled, "宸插仠姝?
+			*/
 		} else if err != nil {
 			t.Status, t.Message, t.Error = StatusFailed, "鍒墛澶辫触", err.Error()
 		} else {
+			t.Status, t.Message, t.Error = StatusSuccess, "JavSP task completed", ""
+			/*
 			t.Status, t.Message, t.Error = StatusSuccess, "鍒墛瀹屾垚锛屽鍣ㄥ凡鑷姩鍒犻櫎", ""
+			*/
 		}
 		s.persistLocked()
 	}
@@ -343,7 +374,10 @@ func cleanRelativePath(raw string) (string, error) {
 		return ".", nil
 	}
 	if strings.Contains(raw, "../") || raw == ".." || strings.HasPrefix(raw, "/") {
+		return "", domain.Errorf(domain.CodeValidation, "The scrape directory must be inside the configured media directory")
+		/*
 		return "", domain.Errorf(domain.CodeValidation, "鍒墛鐩綍鍙兘鏄獟浣撶洰褰曚笅鐨勭浉瀵硅矾寰?)
+		*/
 	}
 	return raw, nil
 }
