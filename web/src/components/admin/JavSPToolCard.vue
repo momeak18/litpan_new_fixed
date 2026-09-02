@@ -23,8 +23,8 @@ const starting = ref(false);
 const canceling = ref<string | null>(null);
 
 const visible = computed(() => {
-  const q = props.searchQuery?.trim().toLowerCase() ?? "";
-  return !q || "javsp javsp-web 鍏冩暟鎹埉鍓?nfo 鎸夐渶瀹瑰櫒".includes(q);
+  const query = props.searchQuery?.trim().toLowerCase() ?? "";
+  return !query || "javsp javsp-web metadata scraper docker nfo".includes(query);
 });
 const activeTask = computed(() => tasks.value.find((task) => task.status === "queued" || task.status === "running"));
 
@@ -39,7 +39,7 @@ async function load() {
     assignConfig(savedConfig);
     tasks.value = savedTasks;
   } catch (error) {
-    toast.error(getApiErrorMessage(error, "鍔犺浇 JavSP 璁剧疆澶辫触"));
+    toast.error(getApiErrorMessage(error, "Failed to load JavSP settings"));
   } finally {
     loading.value = false;
   }
@@ -49,9 +49,9 @@ async function save() {
   saving.value = true;
   try {
     assignConfig(await javspApi.setConfig({ ...config }));
-    toast.success(config.enabled ? "JavSP 鎸夐渶鍒墛宸插惎鐢? : "JavSP 鎸夐渶鍒墛宸插仠鐢?);
+    toast.success(config.enabled ? "JavSP on-demand scraping enabled" : "JavSP on-demand scraping disabled");
   } catch (error) {
-    toast.error(getApiErrorMessage(error, "淇濆瓨 JavSP 璁剧疆澶辫触"));
+    toast.error(getApiErrorMessage(error, "Failed to save JavSP settings"));
   } finally {
     saving.value = false;
   }
@@ -63,10 +63,10 @@ async function start() {
     const task = await javspApi.createTask(relativePath.value);
     tasks.value = [task, ...tasks.value.filter((item) => item.id !== task.id)];
     relativePath.value = "";
-    toast.success("JavSP 浠诲姟宸插姞鍏ラ槦鍒楋紱瀹瑰櫒浼氬湪瀹屾垚鍚庤嚜鍔ㄥ垹闄?);
+    toast.success("JavSP task added to the queue");
     await refreshTasks();
   } catch (error) {
-    toast.error(getApiErrorMessage(error, "鍒涘缓 JavSP 浠诲姟澶辫触"));
+    toast.error(getApiErrorMessage(error, "Failed to create JavSP task"));
   } finally {
     starting.value = false;
   }
@@ -76,7 +76,7 @@ async function refreshTasks() {
   try {
     tasks.value = await javspApi.listTasks();
   } catch (error) {
-    toast.error(getApiErrorMessage(error, "鍒锋柊浠诲姟鐘舵€佸け璐?));
+    toast.error(getApiErrorMessage(error, "Failed to refresh JavSP tasks"));
   }
 }
 
@@ -86,14 +86,20 @@ async function cancel(id: string) {
     await javspApi.cancelTask(id);
     await refreshTasks();
   } catch (error) {
-    toast.error(getApiErrorMessage(error, "鍋滄浠诲姟澶辫触"));
+    toast.error(getApiErrorMessage(error, "Failed to cancel JavSP task"));
   } finally {
     canceling.value = null;
   }
 }
 
 function statusLabel(status: JavSPTask["status"]) {
-  return ({ queued: "鎺掗槦涓?, running: "杩愯涓?, success: "宸插畬鎴?, failed: "澶辫触", canceled: "宸插仠姝? })[status];
+  return ({
+    queued: "Queued",
+    running: "Running",
+    success: "Completed",
+    failed: "Failed",
+    canceled: "Canceled",
+  })[status];
 }
 
 onMounted(load);
@@ -103,77 +109,80 @@ onMounted(load);
   <CloudToolCard
     v-show="visible"
     :enabled="config.enabled"
-    name="JavSP 鎸夐渶鍏冩暟鎹埉鍓?
-    driver="鐭敓鍛藉懆鏈?Docker 瀹瑰櫒"
+    name="JavSP on-demand metadata scraping"
+    driver="Runs a short-lived JavSP Docker container"
     logo-alt="JavSP"
-    :tags="[{ label: activeTask ? '浠诲姟杩愯涓? : '鎸夐渶鍚姩', variant: activeTask ? 'warn' : 'default' }]"
-    :stat-value="activeTask ? statusLabel(activeTask.status) : '绌洪棽'"
-    stat-label="JavSP 瀹瑰櫒鐘舵€?
+    :tags="[{ label: activeTask ? 'Task running' : 'Ready', variant: activeTask ? 'warn' : 'default' }]"
+    :stat-value="activeTask ? statusLabel(activeTask.status) : 'Idle'"
+    stat-label="JavSP container status"
   >
     <template #logo>
       <span class="javsp-logo">JS</span>
     </template>
 
-    姣忔鍒墛鎵嶅垱寤?JavSP 瀹瑰櫒锛屽畬鎴愭垨鍙栨秷鍚庤嚜鍔ㄥ垹闄わ紱涓嶄細甯搁┗鍗犵敤鍐呭瓨銆?
+    A JavSP container is created only for each scraping task and is removed when the task finishes or is canceled.
+
     <template #details>
       <div class="javsp-form">
-      <label>
-        Docker 涓绘満濯掍綋鐩綍
-        <input v-model.trim="config.host_media_dir" placeholder="渚嬪 /mnt/media" :disabled="loading" />
-      </label>
-      <label>
-        瀹瑰櫒鍐呮寕杞界洰褰?        <input v-model.trim="config.container_media_dir" placeholder="/video" :disabled="loading" />
-      </label>
-      <label>
-        JavSP 闀滃儚
-        <input v-model.trim="config.image" placeholder="apecme/javsp-web:bata" :disabled="loading" />
-      </label>
-      <label>
-        鍐呭瓨涓婇檺锛圡B锛? 涓轰笉闄愬埗锛?        <input v-model.number="config.memory_limit_mb" type="number" min="0" max="4096" :disabled="loading" />
-      </label>
-      <label class="javsp-enabled">
-        <input v-model="config.enabled" type="checkbox" :disabled="loading" />
-        鍚敤鎸夐渶鍒墛
-      </label>
-      <AppButton size="sm" :disabled="loading || saving" @click="save">
-        {{ saving ? "淇濆瓨涓€? : "淇濆瓨璁剧疆" }}
-      </AppButton>
+        <label>
+          Host media directory
+          <input v-model.trim="config.host_media_dir" placeholder="/mnt/media" :disabled="loading" />
+        </label>
+        <label>
+          Media directory inside the container
+          <input v-model.trim="config.container_media_dir" placeholder="/video" :disabled="loading" />
+        </label>
+        <label>
+          JavSP image
+          <input v-model.trim="config.image" placeholder="apecme/javsp-web:beta" :disabled="loading" />
+        </label>
+        <label>
+          Memory limit (MB, 0 for unlimited)
+          <input v-model.number="config.memory_limit_mb" type="number" min="0" max="4096" :disabled="loading" />
+        </label>
+        <label class="javsp-enabled">
+          <input v-model="config.enabled" type="checkbox" :disabled="loading" />
+          Enable on-demand scraping
+        </label>
+        <AppButton size="sm" :disabled="loading || saving" @click="save">
+          {{ saving ? "Saving..." : "Save settings" }}
+        </AppButton>
       </div>
 
       <div class="javsp-start">
-      <input
-        v-model.trim="relativePath"
-        placeholder="濯掍綋鐩綍涓嬬殑鐩稿璺緞锛涚暀绌哄垯鍒墛鏁翠釜鐩綍"
-        :disabled="loading || starting || !config.enabled"
-        @keyup.enter="start"
-      />
-      <AppButton size="sm" :disabled="loading || starting || !config.enabled" @click="start">
-        {{ starting ? "鍒涘缓涓€? : "寮€濮嬪埉鍓? }}
-      </AppButton>
+        <input
+          v-model.trim="relativePath"
+          placeholder="Relative path of the media directory to scrape"
+          :disabled="loading || starting || !config.enabled"
+          @keyup.enter="start"
+        />
+        <AppButton size="sm" :disabled="loading || starting || !config.enabled" @click="start">
+          {{ starting ? "Starting..." : "Start task" }}
+        </AppButton>
       </div>
 
       <div v-if="tasks.length" class="javsp-tasks">
-      <div v-for="task in tasks.slice(0, 5)" :key="task.id" class="javsp-task">
-        <div>
-          <strong>{{ statusLabel(task.status) }}</strong>
-          <span>{{ task.relative_path }}</span>
-          <small>{{ task.error || task.message }}</small>
+        <div v-for="task in tasks.slice(0, 5)" :key="task.id" class="javsp-task">
+          <div>
+            <strong>{{ statusLabel(task.status) }}</strong>
+            <span>{{ task.relative_path }}</span>
+            <small>{{ task.error || task.message }}</small>
+          </div>
+          <AppButton
+            v-if="task.status === 'queued' || task.status === 'running'"
+            size="sm"
+            variant="danger"
+            :disabled="canceling === task.id"
+            @click="cancel(task.id)"
+          >
+            {{ canceling === task.id ? "Canceling..." : "Cancel" }}
+          </AppButton>
+          <details v-if="task.log" class="javsp-log">
+            <summary>Task log</summary>
+            <pre>{{ task.log }}</pre>
+          </details>
         </div>
-        <AppButton
-          v-if="task.status === 'queued' || task.status === 'running'"
-          size="sm"
-          variant="danger"
-          :disabled="canceling === task.id"
-          @click="cancel(task.id)"
-        >
-          {{ canceling === task.id ? "鍋滄涓€? : "鍋滄" }}
-        </AppButton>
-        <details v-if="task.log" class="javsp-log">
-          <summary>鏃ュ織</summary>
-          <pre>{{ task.log }}</pre>
-        </details>
-      </div>
-      <AppButton size="sm" variant="secondary" @click="refreshTasks">鍒锋柊浠诲姟</AppButton>
+        <AppButton size="sm" variant="secondary" @click="refreshTasks">Refresh tasks</AppButton>
       </div>
     </template>
   </CloudToolCard>
@@ -197,4 +206,3 @@ onMounted(load);
 .javsp-log pre { max-height: 180px; overflow: auto; margin: 6px 0 0; white-space: pre-wrap; word-break: break-word; }
 @media (max-width: 480px) { .javsp-start { align-items: stretch; flex-direction: column; } }
 </style>
-
